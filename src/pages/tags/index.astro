@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, getTags } from '../../lib/posts';
+
+const posts = await getPosts();
+const tags = getTags(posts);
+---
+
+<BaseLayout title="标签" description="按主题浏览 AinSoph 的笔记。">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">TAGS</p>
+      <h1>标签</h1>
+      <p class="meta">{tags.length} 个主题 · 点一个看看</p>
+    </header>
+
+    {tags.length === 0 ? (
+      <p class="empty">还没有标签。</p>
+    ) : (
+      <div class="cloud">
+        {tags.map(({ tag, count }) => (
+          <a class="tag" href={`/tags/${encodeURIComponent(tag)}/`}>
+            #{tag}<span class="count">{count}</span>
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 22px 80px;
+  }
+  .page-head {
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-head h1 {
+    margin: 12px 0 10px;
+    font-size: clamp(30px, 5vw, 40px);
+  }
+  .cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 15px;
+    text-decoration: none;
+    transition: border-color 0.18s ease, color 0.18s ease;
+  }
+  .tag:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .count {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .empty {
+    padding: 40px 0;
+    color: var(--text-muted);
+  }
+</style>

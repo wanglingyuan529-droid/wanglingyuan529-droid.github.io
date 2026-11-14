@@ -1,0 +1,151 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts } from '../lib/posts';
+import WorldTree from '../components/WorldTree.astro';
+
+const posts = await getPosts();
+---
+
+<BaseLayout title="关于" description="AinSoph 是什么，谁在写，用什么搭的。">
+  <div class="wrap">
+    <nav class="crumbs" aria-label="面包屑">
+      <a href="/">首页</a>
+      <span aria-hidden="true">/</span>
+      <span>关于</span>
+    </nav>
+
+    <header class="page-head">
+      <p class="eyebrow">ABOUT</p>
+      <h1>这是一个还在生长的小站</h1>
+      <p class="lede">
+        AinSoph 是一个个人笔记站。名字取自"无限"与"世界"，但它的内容很具体：
+        每天学到的一点东西、想明白的一点事、踩过的一个坑。
+      </p>
+    </header>
+
+    <div class="grid">
+      <section>
+        <h2>三个角落</h2>
+        <dl>
+          <dt>学习</dt>
+          <dd>课程、语言、算法、工具，以及踩过的坑。有代码，有命令，有报错。</dd>
+          <dt>思考</dt>
+          <dd>读书、复盘、情绪与暂时还没想明白的事。允许短，允许零碎。</dd>
+          <dt>关于</dt>
+          <dd>这个站本身：怎么搭的、改过什么、为什么这样改。</dd>
+        </dl>
+      </section>
+
+      <section>
+        <h2>怎么读</h2>
+        <ul>
+          <li><a href="/posts/">全部笔记</a>：按时间倒序，最快的入口。</li>
+          <li><a href="/archive/">归档</a>：按年月，适合翻旧账。</li>
+          <li><a href="/tags/">标签</a>：按主题，适合顺着一条线读。</li>
+          <li><a href="/rss.xml">RSS</a>：订阅，有新文章自己送上门。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>这个站是怎么搭的</h2>
+        <p>
+          Astro + Markdown + GitHub Pages。内容在仓库里的
+          <code>content/posts/</code>，一篇一个文件，push 之后自动构建发布。
+          没有数据库，没有后台，浏览器里也看不到任何"管理界面"——
+          想改哪篇，就改那个文件。
+        </p>
+        <p>
+          首页那棵树是 Canvas 画的。它每天只长一次，长完就停；
+          叶子会随着文章变多而变密。
+        </p>
+      </section>
+
+      <section>
+        <h2>联系</h2>
+        <p>
+          想聊聊、指个错、或者只是打个招呼：
+          <a href="mailto:hello@example.com">hello@example.com</a>（占位，换成你的邮箱）。
+        </p>
+      </section>
+    </div>
+
+    <div class="tree-strip">
+      <WorldTree count={posts.length} height="280px" />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 22px 80px;
+  }
+  .crumbs {
+    display: flex;
+    gap: 8px;
+    font-size: var(--fs-meta);
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .crumbs a {
+    color: var(--text-muted);
+  }
+  .crumbs a:hover {
+    color: var(--accent);
+  }
+  .page-head {
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-head h1 {
+    margin: 10px 0 12px;
+    font-size: clamp(28px, 4.6vw, 40px);
+  }
+  .lede {
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 2;
+    margin: 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 30px;
+  }
+  section h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  dl {
+    margin: 0;
+  }
+  dt {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    margin-top: 12px;
+  }
+  dd {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.9;
+  }
+  ul {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 2.1;
+    padding-left: 1.2em;
+  }
+  p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 2;
+  }
+  .tree-strip {
+    margin-top: 44px;
+    border-top: 1px solid var(--border);
+    padding-top: 26px;
+  }
+</style>

@@ -1,0 +1,130 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, postSlug, fmtDate, type Post } from '../lib/posts';
+
+const posts = await getPosts();
+const byYear = new Map<number, Post[]>();
+for (const p of posts) {
+  const y = p.data.date.getUTCFullYear();
+  if (!byYear.has(y)) byYear.set(y, []);
+  byYear.get(y)!.push(p);
+}
+const groups = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
+const byMonth = (list: Post[]) => {
+  const m = new Map<number, Post[]>();
+  for (const p of list) {
+    const month = p.data.date.getUTCMonth() + 1;
+    if (!m.has(month)) m.set(month, []);
+    m.get(month)!.push(p);
+  }
+  return [...m.entries()].sort((a, b) => b[0] - a[0]);
+};
+---
+
+<BaseLayout title="归档" description="按年份与月份归档的全部笔记。">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">ARCHIVE</p>
+      <h1>归档</h1>
+      <p class="meta">{posts.length} 篇笔记 · 阅读的另一种入口</p>
+    </header>
+
+    {groups.length === 0 ? (
+      <p class="empty">还没有落笔。</p>
+    ) : (
+      groups.map(([year, list]) => (
+        <section class="year">
+          <h2>{year}<span class="count">{list.length} 篇</span></h2>
+          {byMonth(list).map(([month, items]) => (
+            <div class="month">
+              <p class="month-label meta">{String(month).padStart(2, '0')} 月</p>
+              <ul>
+                {items.map((p) => (
+                  <li>
+                    <span class="meta day">{String(p.data.date.getUTCDate()).padStart(2, '0')}</span>
+                    <a href={`/posts/${postSlug(p)}/`}>{p.data.title}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      ))
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 22px 80px;
+  }
+  .page-head {
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-head h1 {
+    margin: 12px 0 10px;
+    font-size: clamp(30px, 5vw, 40px);
+  }
+  .year {
+    margin-top: 34px;
+  }
+  .year h2 {
+    font-size: 26px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .count {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .month {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+  }
+  .month-label {
+    padding-top: 2px;
+  }
+  .month ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .month li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 3px 0;
+  }
+  .day {
+    width: 24px;
+  }
+  .month a {
+    color: var(--text);
+    font-size: 15px;
+  }
+  .month a:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .empty {
+    padding: 40px 0;
+    color: var(--text-muted);
+  }
+  @media (max-width: 600px) {
+    .month {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  }
+</style>

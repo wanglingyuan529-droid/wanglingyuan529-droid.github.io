@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="搜索" description="站内搜索 AinSoph 的全部笔记。">
+  <div class="wrap">
+    <p class="eyebrow">SEARCH</p>
+    <h1>搜索</h1>
+    <p class="meta">支持中文分词；输入标题、标签或正文里的词。</p>
+    <div id="search" class="search-box"></div>
+  </div>
+
+  <link rel="stylesheet" href={`${import.meta.env.BASE_URL}pagefind/pagefind-ui.css`} />
+  <script is:inline src={`${import.meta.env.BASE_URL}pagefind/pagefind-ui.js`}></script>
+  <script is:inline>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PagefindUI === 'undefined') return;
+      new PagefindUI({
+        element: '#search',
+        showSubResults: true,
+        showImages: false,
+        translations: {
+          placeholder: '输入关键词…',
+          zero_results: '没有找到「[SEARCH_TERM]」',
+          many_results: '找到 [COUNT] 条结果',
+          one_result: '找到 1 条结果',
+          clear_search: '清空',
+        },
+      });
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 22px 80px;
+  }
+  h1 {
+    margin: 12px 0 10px;
+    font-size: clamp(30px, 5vw, 40px);
+  }
+  .meta {
+    margin-bottom: 26px;
+  }
+  .search-box {
+    --pagefind-ui-primary: var(--accent);
+    --pagefind-ui-text: var(--text);
+    --pagefind-ui-background: var(--surface);
+    --pagefind-ui-border: var(--border);
+    --pagefind-ui-tag: var(--text-muted);
+    --pagefind-ui-border-radius: 10px;
+    --pagefind-ui-font: var(--font-sans);
+  }
+</style>

@@ -1,0 +1,361 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WorldTree from '../components/WorldTree.astro';
+import { getPosts, CATEGORIES, postSlug, fmtDate, type Category } from '../lib/posts';
+
+const posts = await getPosts();
+const latest = posts.slice(0, 5);
+const boards = (Object.keys(CATEGORIES) as Category[]).map((key) => ({
+  key,
+  ...CATEGORIES[key],
+  href: key === 'about' ? '/about/' : `/boards/${key}/`,
+  count: posts.filter((p) => p.data.category === key).length,
+}));
+---
+
+<BaseLayout>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">AIN SOPH · WELCOME TO MY LITTLE WORLD</p>
+        <h1>
+          把平凡的日子<br />
+          写成<span class="hl">自己的</span>故事。
+        </h1>
+        <p class="lede">
+          一个还在学习的人，每天把学到的东西钉在树上。<br />
+          慢慢记录，也慢慢发现。
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn-primary" href="/posts/">读最新笔记</a>
+          <a class="btn-ghost" href="/about/">这个站是什么</a>
+        </div>
+
+        <div class="latest-block">
+          <div class="latest-head">
+            <span class="eyebrow">最新</span>
+            <a class="meta" href="/posts/">全部 {posts.length} 篇 →</a>
+          </div>
+          {latest.length === 0 ? (
+            <p class="meta empty">还没有落笔。第一篇正在路上。</p>
+          ) : (
+            <ul class="latest">
+              {latest.map((post) => (
+                <li>
+                  <span class="meta date">{fmtDate(post.data.date)}</span>
+                  <a class="latest-title" href={`/posts/${postSlug(post)}/`}>{post.data.title}</a>
+                  <span class="meta board">{CATEGORIES[post.data.category].name}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div class="hero-tree">
+        <WorldTree count={posts.length} height="min(72vh, 620px)" />
+      </div>
+    </section>
+
+    <section class="boards" aria-labelledby="boards-title">
+      <div class="sec-head">
+        <h2 id="boards-title">三个角落</h2>
+        <p class="meta">每一种记录，都有自己的位置。</p>
+      </div>
+      <div class="board-grid">
+        {boards.map((b) => (
+          <a class="board-card" href={b.href}>
+            <span class="board-meta">
+              <span class="eyebrow">{b.english}</span>
+              <span class="meta count">{b.count} 篇</span>
+            </span>
+            <span class="board-name">{b.name}</span>
+            <span class="board-desc">{b.desc}</span>
+            <span class="board-arrow" aria-hidden="true">↗</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="manifesto">
+      <p class="eyebrow">ON WRITING</p>
+      <p class="quote">“不必每一天都闪闪发光，有一些值得记住的瞬间，就很好。”</p>
+      <p class="meta">— 写在第一篇随笔里的话</p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: var(--content-wide);
+    margin: 0 auto;
+    padding: 0 22px 40px;
+  }
+
+  /* ── 首屏：左文字 / 右树 ── */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+    min-height: calc(100vh - 64px);
+    padding: clamp(40px, 8vh, 96px) 0 clamp(48px, 6vh, 72px);
+  }
+
+  .hero-copy h1 {
+    margin: 18px 0 0;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-copy h1 .hl {
+    color: var(--accent);
+    position: relative;
+  }
+
+  .hero-copy h1 .hl::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    bottom: 6px;
+    height: 8px;
+    background: var(--glow);
+    border-radius: 4px;
+    z-index: -1;
+  }
+
+  .lede {
+    margin: 22px 0 0;
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 2;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    padding: 11px 24px;
+    border-radius: 999px;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 500;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+    text-decoration: none;
+    box-shadow: 0 0 22px rgb(143 245 192 / 0.25);
+  }
+
+  .btn-ghost {
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .latest-block {
+    margin-top: 38px;
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+  }
+
+  .latest-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .latest {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .latest li {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    margin: 0;
+  }
+
+  .latest li:last-child {
+    border-bottom: 0;
+  }
+
+  .latest-title {
+    color: var(--text);
+    font-size: 15.5px;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.18s ease;
+  }
+
+  .latest-title:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .meta.board {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .empty {
+    padding: 12px 0;
+  }
+
+  .hero-tree {
+    align-self: center;
+  }
+
+  /* ── 三个角落 ── */
+  .boards {
+    padding: clamp(28px, 5vh, 56px) 0;
+  }
+
+  .sec-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .sec-head h2 {
+    font-size: 26px;
+    font-weight: 600;
+  }
+
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .board-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 20px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    backdrop-filter: blur(10px) saturate(115%);
+    box-shadow: var(--shadow-card);
+    text-decoration: none;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+    min-height: 150px;
+  }
+
+  .board-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+    box-shadow: var(--shadow-hover);
+    text-decoration: none;
+  }
+
+  .board-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .board-name {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .board-desc {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .board-arrow {
+    position: absolute;
+    right: 20px;
+    bottom: 16px;
+    color: var(--accent);
+    font-size: 16px;
+    opacity: 0.55;
+    transition: opacity 0.2s ease;
+  }
+
+  .board-card:hover .board-arrow {
+    opacity: 1;
+  }
+
+  /* ── 引言 ── */
+  .manifesto {
+    margin: 48px 0 24px;
+    padding: 36px 0 12px;
+    border-top: 1px solid var(--border);
+    max-width: 640px;
+  }
+
+  .manifesto .quote {
+    font-family: var(--font-serif);
+    font-size: clamp(20px, 2.6vw, 24px);
+    line-height: 1.7;
+    color: var(--text);
+    margin: 12px 0;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      min-height: 0;
+      gap: 24px;
+    }
+    .hero-tree {
+      order: -1;
+      width: 100%;
+    }
+    .hero-tree :global(.tree-frame) {
+      height: min(44vh, 360px) !important;
+    }
+    .board-grid {
+      grid-template-columns: 1fr;
+    }
+    .latest li {
+      grid-template-columns: 74px minmax(0, 1fr);
+    }
+    .latest .meta.board {
+      display: none;
+    }
+  }
+</style>

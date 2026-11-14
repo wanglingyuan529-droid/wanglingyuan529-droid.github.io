@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, getTags, postSlug, fmtDate } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return getTags(posts).map(({ tag }) => ({ params: { tag }, props: { tag } }));
+}
+
+const { tag } = Astro.props;
+const posts = await getPosts();
+const list = posts.filter((p) => p.data.tags.includes(tag));
+---
+
+<BaseLayout title={`#${tag}`} description={`标签 #${tag} 下的全部笔记。`}>
+  <div class="wrap">
+    <nav class="crumbs" aria-label="面包屑">
+      <a href="/">首页</a>
+      <span aria-hidden="true">/</span>
+      <a href="/tags/">标签</a>
+    </nav>
+    <header class="page-head">
+      <p class="eyebrow">TAG</p>
+      <h1>#{tag}</h1>
+      <p class="meta">{list.length} 篇</p>
+    </header>
+    <ul class="list">
+      {list.map((p) => (
+        <li>
+          <span class="meta">{fmtDate(p.data.date)}</span>
+          <a href={`/posts/${postSlug(p)}/`}>{p.data.title}</a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 22px 80px;
+  }
+  .crumbs {
+    display: flex;
+    gap: 8px;
+    font-size: var(--fs-meta);
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .crumbs a {
+    color: var(--text-muted);
+  }
+  .crumbs a:hover {
+    color: var(--accent);
+  }
+  .page-head {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .page-head h1 {
+    margin: 10px 0 6px;
+    font-size: clamp(28px, 4.5vw, 36px);
+  }
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .list li {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  }
+  .list a {
+    color: var(--text);
+    font-size: 16px;
+  }
+  .list a:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+</style>

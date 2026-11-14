@@ -1,0 +1,294 @@
+---
+interface Props {
+  /** 已发布文章数：决定叶密度（每 10 篇变密一档） */
+  count?: number;
+  height?: string;
+  class?: string;
+}
+const { count = 0, height = '100%' } = Astro.props;
+---
+
+<div class="tree-frame" style={`height:${height}`} data-count={count} aria-hidden="true">
+  <canvas id="tree-canvas"></canvas>
+  <div class="tree-veil"></div>
+  <p class="tree-caption">the world tree · 每天写一点，它长一点</p>
+</div>
+
+<script>
+  // 确定性世界树：固定种子 → 每次刷新位置一致；跑完即停帧，不耗电。
+  const MAX_DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const cv = document.getElementById('tree-canvas') as HTMLCanvasElement | null;
+  const frameEl = cv?.parentElement as HTMLElement | null;
+  if (!cv || !frameEl) throw new Error('tree canvas missing');
+  const ctx = cv.getContext('2d')!;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const paperCount = Number((frameEl?.dataset.count as string) ?? 0);
+
+  let W = 0;
+  let H = 0;
+  let raf = 0;
+  let t0 = 0;
+
+  // mulberry32：小而稳的种子随机
+  function mulberry32(seed: number) {
+    return function () {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  type B = { x: number; y: number; a: number; len: number; w: number; depth: number; delay: number; prog: number };
+  type L = { x: number; y: number; r: number; tw: number; ph: number };
+
+  let branches: B[] = [];
+  let leaves: L[] = [];
+
+  function growBranch(
+    x: number, y: number, a: number, len: number, w: number, depth: number,
+    out: B[], rnd: () => number, delay: number,
+  ) {
+    out.push({ x, y, a, len, w, depth, delay, prog: 0 });
+    if (depth >= 6 || len < 12) {
+      if (depth >= 3 && rnd() < 0.8) {
+        leaves.push({
+          x: x + Math.cos(a) * len, y: y + Math.sin(a) * len,
+          r: 1.2 + rnd() * 2.4, tw: 0.4 + rnd() * 0.9, ph: rnd() * 6.28,
+        });
+      }
+      return;
+    }
+    const spread = depth <= 1 ? 0.82 : 0.5;
+    for (let i = 0; i < 2; i++) {
+      let na = a + (i - 0.5) * (spread + rnd() * 0.28) + (rnd() - 0.5) * 0.14;
+      // 只允许朝上生长（画布 y 向下为正，sin 须为负）
+      if (Math.sin(na) > -0.08) na = Math.cos(na) >= 0 ? -0.1 : Math.PI + 0.1;
+      growBranch(
+        x + Math.cos(a) * len, y + Math.sin(a) * len, na,
+        len * (0.68 + rnd() * 0.14), Math.max(1, w * 0.66), depth + 1, out, rnd,
+        delay + 0.018,
+      );
+    }
+  }
+
+  function build() {
+    const S = Math.min(W, H);
+    const cx = W * 0.5;
+    const cy = H * 0.94;
+    const rnd = mulberry32(0x9e3779b9);
+    branches = [];
+    leaves = [];
+    const angs = [-2.69, -2.32, -1.97, -1.57, -1.17, -0.82, -0.45];
+    // 主干：从落点竖直向上，树冠从主干顶端分叉
+    const trunkLen = S * 0.16;
+    branches.push({
+      x: cx, y: cy, a: -Math.PI / 2, len: trunkLen,
+      w: S * 0.026, depth: 0, delay: 0, prog: 0,
+    });
+    const topY = cy - trunkLen;
+    angs.forEach((a, i) => {
+      const dev = Math.abs(a + 1.57) / 1.12;
+      growBranch(
+        cx, topY, a + (rnd() - 0.5) * 0.1,
+        S * 0.26 * (0.9 + rnd() * 0.2) * (1 + 0.5 * dev),
+        S * 0.02, 0, branches, rnd, i * 0.1,
+      );
+    });
+    // 叶密度 ∝ 文章数（每 10 篇一档，封顶）
+    const extra = Math.min(240, 70 + Math.round(paperCount * 5));
+    for (let i = 0; i < extra; i++) {
+      const b = branches[Math.floor(rnd() * branches.length)];
+      const t = rnd();
+      leaves.push({
+        x: b.x + Math.cos(b.a) * b.len * t,
+        y: b.y + Math.sin(b.a) * b.len * t,
+        r: 1.2 + rnd() * 2.4,
+        tw: 0.3 + rnd() * 0.9,
+        ph: rnd() * 6.28,
+      });
+    }
+  }
+
+  const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
+  const easeIO = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+  const SY = () => H * 0.08;
+  const EY = () => H * 0.94;
+  const DOTR = () => Math.min(W, H) * 0.045;
+
+  function drawDot(x: number, y: number, r: number, now: number) {
+    if (r <= 0.5) return;
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
+    halo.addColorStop(0, 'rgba(190,255,215,0.8)');
+    halo.addColorStop(0.35, 'rgba(140,255,195,0.3)');
+    halo.addColorStop(1, 'rgba(140,255,195,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 3.2, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = '#eafff2';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 6.283);
+    ctx.fill();
+    const pr = r * (1.6 + 0.25 * Math.sin(now / 280));
+    ctx.strokeStyle = 'rgba(190,255,215,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, pr, 0, 6.283);
+    ctx.stroke();
+  }
+
+  function paint(elapsed: number, now: number) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#05080a');
+    g.addColorStop(0.55, '#071210');
+    g.addColorStop(1, '#0a1512');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.lineCap = 'round';
+
+    const GROW_MS = 850;
+    const DESC_MS = 1700;
+    const TREE_START = GROW_MS + DESC_MS;
+    const TREE_MS = 2600;
+
+    let dx = W / 2;
+    let dy = SY();
+    let r = 0;
+    if (elapsed < GROW_MS) {
+      r = DOTR() * easeOut(Math.max(0, elapsed) / GROW_MS);
+    } else if (elapsed < TREE_START) {
+      const e = easeIO((elapsed - GROW_MS) / DESC_MS);
+      r = DOTR() * (1 - 0.25 * e);
+      dy = SY() + (EY() - SY()) * e;
+    } else {
+      const finished = elapsed >= TREE_START + TREE_MS;
+      r = finished ? DOTR() * 0.16 : DOTR() * 0.72 * (1 + 0.08 * Math.sin(now / 300));
+      dx = W / 2;
+      dy = EY();
+    }
+
+    const treeP = Math.min(1, Math.max(0, (elapsed - TREE_START) / TREE_MS));
+    for (const b of branches) {
+      const local = Math.min(1, Math.max(0, (treeP - b.delay * 0.35) / 0.65));
+      if (local <= 0) continue;
+      const p = easeOut(local);
+      const ex = b.x + Math.cos(b.a) * b.len * p;
+      const ey = b.y + Math.sin(b.a) * b.len * p;
+      const alpha = 0.32 + 0.58 * (1 - b.depth / 7);
+      ctx.strokeStyle = `rgba(150,240,190,${alpha.toFixed(3)})`;
+      ctx.lineWidth = Math.max(0.6, b.w * 0.72);
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+    }
+
+    if (treeP > 0.35) {
+      const tt = now / 1000;
+      for (const l of leaves) {
+        const tw = 0.35 + 0.35 * Math.sin(tt * 0.6 + l.ph);
+        ctx.fillStyle = `rgba(170,255,205,${tw.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(l.x, l.y, l.r, 0, 6.283);
+        ctx.fill();
+      }
+    }
+
+    drawDot(dx, dy, r, now);
+    return treeP >= 1 && !reduced;
+  }
+
+  function loop(now: number) {
+    const elapsed = now - t0;
+    const finished = paint(elapsed, now) || false;
+    if (finished) {
+      // 末帧：再画一次静态叶（不再动画），然后停 rAF
+      paint(1e9, now);
+      raf = 0;
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function resize() {
+    const w = frameEl!.clientWidth || 360;
+    const h = frameEl!.clientHeight || 480;
+    if (w === W && h === H) return;
+    W = w;
+    H = h;
+    cv.width = Math.round(w * MAX_DPR);
+    cv.height = Math.round(h * MAX_DPR);
+    cv.style.width = w + 'px';
+    cv.style.height = h + 'px';
+    ctx.setTransform(MAX_DPR, 0, 0, MAX_DPR, 0, 0);
+    build();
+    if (reduced) {
+      paint(1e9, performance.now());
+    }
+  }
+
+  function start() {
+    cancelAnimationFrame(raf);
+    t0 = performance.now();
+    if (reduced) {
+      paint(1e9, performance.now());
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      resize();
+      start();
+    }, 120);
+  });
+
+  // 页面不可见时暂停（省电）
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  });
+
+  resize();
+  start();
+</script>
+
+<style>
+  .tree-frame {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: radial-gradient(ellipse at 50% 20%, rgb(20 44 33 / 0.35), transparent 65%);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .tree-frame canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .tree-veil {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 25%, transparent 35%, rgb(4 8 7 / 0.45) 100%);
+  }
+  .tree-caption {
+    position: absolute;
+    left: 14px;
+    top: 12px;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgb(143 245 192 / 0.45);
+    pointer-events: none;
+  }
+</style>

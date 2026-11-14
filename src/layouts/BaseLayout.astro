@@ -1,0 +1,216 @@
+---
+import '@fontsource/noto-sans-sc/400.css';
+import '@fontsource/noto-sans-sc/500.css';
+import '@fontsource/noto-serif-sc/600.css';
+import '@fontsource/noto-serif-sc/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '../styles/tokens.css';
+import '../styles/type.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogType?: string;
+}
+
+const { title, description = '一个还在学习的人，每天把学到的东西钉在树上。', ogType = 'website' } =
+  Astro.props;
+
+const siteName = 'AinSoph';
+const fullTitle = title ? `${title} · ${siteName}` : `${siteName} · 阿因索菲的每日笔记`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const nav = [
+  { href: '/', label: '首页' },
+  { href: '/posts/', label: '全部' },
+  { href: '/boards/study/', label: '学习' },
+  { href: '/boards/thoughts/', label: '思考' },
+  { href: '/about/', label: '关于' },
+];
+const base = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={siteName} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#07110d" />
+    <script is:inline>
+      try {
+        const p = new URLSearchParams(location.search).get('theme');
+        const t = p || localStorage.getItem('theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <header class="site-head">
+      <div class="head-inner">
+        <a class="brand" href={base}>
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <span>AinSoph</span>
+        </a>
+        <nav class="nav" aria-label="主导航">
+          {nav.map((item) => (
+            <a href={`${base}${item.href.replace(/^\//, '')}`}>{item.label}</a>
+          ))}
+        </nav>
+        <button id="theme-toggle" class="theme-toggle" aria-label="切换明暗主题" title="切换明暗主题">
+          ◐
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-foot">
+      <p class="meta">AinSoph · 在这里，慢一点也没关系。</p>
+      <p class="meta foot-links">
+        <a href={`${base}search/`}>搜索</a>
+        <span aria-hidden="true">·</span>
+        <a href={`${base}rss.xml`}>RSS</a>
+        <span aria-hidden="true">·</span>
+        <a href={`${base}about/`}>关于</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+
+    <script is:inline>
+      const btn = document.getElementById('theme-toggle');
+      const root = document.documentElement;
+      function apply(t) {
+        root.dataset.theme = t;
+        try { localStorage.setItem('theme', t); } catch {}
+      }
+      btn?.addEventListener('click', () => {
+        const now = root.dataset.theme === 'light' ? 'dark' : 'light';
+        apply(now);
+      });
+      const forced = new URLSearchParams(location.search).get('theme');
+      if ((forced === 'light' || forced === 'dark') && !root.dataset.theme) root.dataset.theme = forced;
+      else if (!root.dataset.theme) {
+        const pref = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        root.dataset.theme = pref;
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-head {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg-elev) 82%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px) saturate(120%);
+  }
+  .head-inner {
+    max-width: var(--content-wide);
+    margin: 0 auto;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--text);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+  }
+  .brand-mark {
+    color: var(--accent);
+    font-size: 16px;
+  }
+  .nav {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+  .nav a {
+    color: var(--text-secondary);
+    font-size: var(--fs-meta);
+    padding: 6px 10px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: color 0.18s ease, background 0.18s ease;
+  }
+  .nav a:hover {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    text-decoration: none;
+  }
+  .theme-toggle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 15px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.18s ease, border-color 0.18s ease;
+  }
+  .theme-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .site-foot {
+    max-width: var(--content-wide);
+    margin: 0 auto;
+    padding: 56px 22px 72px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .site-foot p {
+    margin: 0;
+  }
+  .foot-links {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .foot-links span {
+    color: var(--border-strong);
+  }
+  @media (max-width: 640px) {
+    .head-inner {
+      padding: 12px 16px;
+      gap: 10px;
+    }
+    .nav {
+      gap: 0;
+    }
+    .nav a {
+      padding: 6px 7px;
+      font-size: 13px;
+    }
+  }
+</style>

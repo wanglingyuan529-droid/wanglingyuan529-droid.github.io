@@ -1,0 +1,78 @@
+/* ─────────────────────────────────────────────────────────────
+   AinSoph · 设计 token（方案 A「林间夜·青玉」为暗色默认）
+   所有颜色组合均已按 WCAG 2.2 实算（见 research/03 报告）：
+   正文 15.52:1 AAA · 次要 10.49:1 · 元信息 7.60:1 · 强调 14.60:1
+   规则：组件里只用变量，不再写死 hex。
+   ───────────────────────────────────────────────────────────── */
+
+:root,
+:root[data-theme='dark'] {
+  /* 背景三层：页面底 → 吸顶/工具条 → 卡片 → 卡内嵌套 */
+  --bg: #07110d;
+  --bg-elev: #0b1913;
+  --surface: #0f2019;
+  --surface-2: #152a21;
+
+  --overlay: rgb(2 6 4 / 0.72);
+  --scrim: rgb(6 12 10 / 0.45);
+
+  --border: #1f3a2f; /* 装饰发丝线 */
+  --border-strong: #4d7a66; /* 控件边界，≥3:1 */
+
+  --text: #ece7d9;
+  --text-secondary: #b3c4b6;
+  --text-muted: #93a89c; /* 仅 14px 元信息 */
+
+  --accent: #8ff5c0; /* 链接 / CTA / 选中 */
+  --accent-hover: #a7ffd0;
+  --on-accent: #052018;
+  --accent-2: #7fd4e2; /* 图表序列 2、链接第二通道 */
+  --accent-3: #dccb8c; /* 图表序列 3、用引强调 */
+  --focus: #a7ffd0;
+
+  --shadow-card: 0 8px 24px -12px rgb(0 0 0 / 0.5);
+  --shadow-hover: 0 12px 32px -12px rgb(0 0 0 / 0.6), 0 0 18px rgb(143 245 192 / 0.12);
+  --glow: rgb(143 245 192 / 0.1);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --content-width: 680px;
+  --content-wide: 1080px;
+
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'Noto Serif CJK SC', serif;
+  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-body: 17px;
+  --lh-body: 1.85;
+  --fs-meta: 14px;
+  --fs-h1: clamp(34px, 5vw, 48px);
+  --fs-h2: 28px;
+  --fs-h3: 22px;
+}
+
+/* 日间（M4 启用；先用系统偏好兜底一个近似值，避免"纯白"） */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #f4eee1;
+    --bg-elev: #efe7d8;
+    --surface: #fffdf8;
+    --surface-2: #f7f1e4;
+    --overlay: rgb(60 50 30 / 0.35);
+    --scrim: rgb(244 238 225 / 0.55);
+    --border: #d8cdb7;
+    --border-strong: #9c8f76;
+    --text: #2b2721;
+    --text-secondary: #4f4a40;
+    --text-muted: #6b6455;
+    --accent: #1f6b4f;
+    --accent-hover: #16543d;
+    --on-accent: #fffdf8;
+    --accent-2: #2a6070;
+    --accent-3: #8a6a1f;
+    --focus: #1f6b4f;
+    --shadow-card: 0 8px 24px -14px rgb(60 50 30 / 0.3);
+    --shadow-hover: 0 12px 32px -14px rgb(60 50 30 / 0.35), 0 0 18px rgb(31 107 79 / 0.1);
+    --glow: rgb(31 107 79 / 0.08);
+  }
+}
